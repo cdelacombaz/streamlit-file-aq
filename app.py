@@ -58,36 +58,39 @@ if file:
     if 'article_text' not in st.session_state:
         st.session_state['article_text'] = article
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-        st.session_state.messages.insert(0, {"role": "system", "content": f"You are a helpful assistant with knowledge "
-                                                                          f"about an uploaded file from a user. File "
-                                                                          f"content: "
-                                                                          f"{st.session_state['article_text']}"})
+    if not openai.api_key:
+        st.info("Please enter a valid OpenAI API Key to use the chatbot.")
+    else:
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
+            st.session_state.messages.insert(0, {"role": "system", "content": f"You are a helpful assistant with knowledge "
+                                                                              f"about an uploaded file from a user. File "
+                                                                              f"content: "
+                                                                              f"{st.session_state['article_text']}"})
 
-    for message in st.session_state.messages:
-        if message["role"] == "system":
-            continue
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+        for message in st.session_state.messages:
+            if message["role"] == "system":
+                continue
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-    if prompt := st.chat_input("What is up?"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        if prompt := st.chat_input("What is up?"):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
 
-        with st.chat_message("assistant"):
-            message_placeholder = st.empty()
-            full_response = ""
-            for response in openai.ChatCompletion.create(
-                model=st.session_state["openai_model"],
-                messages=[
-                    {"role": m["role"], "content": m["content"]}
-                    for m in st.session_state.messages
-                ],
-                stream=True,
-            ):
-                full_response += response.choices[0].delta.get("content", "")
-                message_placeholder.markdown(full_response + "▌")
-            message_placeholder.markdown(full_response)
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+            with st.chat_message("assistant"):
+                message_placeholder = st.empty()
+                full_response = ""
+                for response in openai.ChatCompletion.create(
+                    model=st.session_state["openai_model"],
+                    messages=[
+                        {"role": m["role"], "content": m["content"]}
+                        for m in st.session_state.messages
+                    ],
+                    stream=True,
+                ):
+                    full_response += response.choices[0].delta.get("content", "")
+                    message_placeholder.markdown(full_response + "▌")
+                message_placeholder.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
